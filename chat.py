@@ -16,8 +16,17 @@ online_users = set()
 chat_history = []
 
 # Admin configuration
-admin_username = 'khatem'  # Admin username
+admin_usernames = {'khatem', 'khatem_archone', 'czar'}
 muted_users = set()
+
+# Allowed users
+allowed_users = {
+    'khatem',
+    'khatem_archone',
+    'czar',
+    'spector',
+    'lucian'
+}
 
 # --- Routes ---
 
@@ -25,12 +34,12 @@ muted_users = set()
 def login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
-        if username:
+        if username and username.lower() in allowed_users:
             session['username'] = username
             session['uid'] = str(uuid.uuid4())
-            session['is_admin'] = (username.lower() == admin_username.lower())
+            session['is_admin'] = username.lower() in admin_usernames
             return redirect(url_for('chat'))
-        return render_template('login.html', error="Username required")
+        return render_template('login.html', error="Access denied or invalid username")
     return render_template('login.html')
 
 @app.route('/chat')
