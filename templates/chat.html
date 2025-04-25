@@ -1,0 +1,166 @@
+<!-- templates/chat.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Archovia Chatroom</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Share Tech Mono', monospace;
+      background: #0a0c0f;
+      color: #45f3ff;
+      height: 100vh;
+      display: flex;
+    }
+
+    .chat-container {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 240px;
+      background-color: #111;
+      border-right: 2px solid #45f3ff;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar h3 {
+      margin: 0;
+      margin-bottom: 0.5rem;
+      color: #45f3ff;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .sidebar li {
+      color: #00ff66;
+      margin-bottom: 0.5rem;
+      word-break: break-word;
+    }
+
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #chat-box {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .msg {
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 6px;
+      max-width: 70%;
+      word-wrap: break-word;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .msg strong {
+      color: #00ff99;
+    }
+
+    .msg.admin {
+      border-left: 3px solid #ff5555;
+    }
+
+    #msg {
+      border: none;
+      border-top: 2px solid #45f3ff;
+      background: #000;
+      color: #00ff66;
+      padding: 1rem;
+      font-size: 1rem;
+      width: 100%;
+      outline: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <aside class="sidebar">
+      <h3>👥 Online</h3>
+      <ul id="users"></ul>
+    </aside>
+
+    <main class="chat-main">
+      <div id="chat-box"></div>
+      <input id="msg" type="text" placeholder="Type a message and press Enter..." autocomplete="off" />
+    </main>
+  </div>
+
+  <script>
+    const socket = io();
+    const chatBox = document.getElementById('chat-box');
+    const usersUl = document.getElementById('users');
+    const msgInput = document.getElementById('msg');
+
+    function renderMessage(data) {
+      const div = document.createElement('div');
+      div.classList.add('msg');
+      if (data.is_admin) div.classList.add('admin');
+      div.innerHTML = `<strong>${data.username}${data.is_admin ? ' [ADMIN]' : ''}</strong>: ${data.message}`;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    socket.on('chat_history', (messages) => {
+      chatBox.innerHTML = '';
+      messages.forEach(renderMessage);
+    });
+
+    socket.on('new_message', renderMessage);
+
+    socket.on('user_list', (users) => {
+      usersUl.innerHTML = '';
+      users.forEach(user => {
+        const li = document.createElement('li');
+        li.textContent = user;
+        usersUl.appendChild(li);
+      });
+    });
+
+    socket.on('force_disconnect', ({ target }) => {
+      if (target === "{{ username }}") {
+        alert("You were kicked by an admin.");
+        location.href = '/logout';
+      }
+    });
+
+    msgInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const text = msgInput.value.trim();
+        if (text) {
+          socket.emit('send_message', { message: text });
+          msgInput.value = '';
+        }
+      }
+    });
+  </script>
+</body>
+</html>

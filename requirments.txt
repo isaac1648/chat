@@ -1,0 +1,5 @@
+flask
+flask-session
+flask-socketio
+python-socketio
+eventlet
